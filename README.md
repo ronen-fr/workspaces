@@ -30,7 +30,7 @@ Sample output:
 -	da5d094f {4 weeks ago}   wip-ronenf-pac-50346
 ...
 ```
-![alt text](https://github.com/ronen-fr/workspaces/tree/rf-ws-cephsz-n-image/aux/cephsz-annotated-1.jpg "V0.1")
 
-![alt text](https://github.com/ronen-fr/workspaces/blob/rf-ws-cephsz-n-image/aux/cephsz-annotated-1.jpg "V0.2")
+![Alt text](aux/cephsz-annotated-1.jpg?raw=true "V0.1")
+
 
