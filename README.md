@@ -1,6 +1,9 @@
 # workspaces
-scripts for managing workspaces
-===============================
+scripts for managing my workflow
+================================
+
+workspaces
+==========
 
 cephsz.sh
 ---------
@@ -32,5 +35,17 @@ Sample output:
 ```
 
 ![Alt text](aux/cephsz-annotated-1.jpg?raw=true "V0.1")
+
+
+Catching failed teuthology jobs in time
+=======================================
+
+pulpito.py
+----------
+
+Querying the nodes used by tests in 'running' state (which sometimes means just:
+'the OSD has crashed some two hours ago, but what if so?')
+
+Use --help for possible args.
 
 
