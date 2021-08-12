@@ -41,7 +41,7 @@ def remote_crash_files_Ccount(node_ad, pth):
     remote_cmd = f'sudo ls {pth}'
     #print (remote_cmd)
     core1 = subprocess.Popen(["echo", "ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
-    core1_st =  subprocess.Popen([ 'wc', '-l' ], stdin=core1.stdout, stdout=subprocess.PIPE)
+    core1_st =  subprocess.Popen([ 'wc', '-c' ], stdin=core1.stdout, stdout=subprocess.PIPE)
     ot, er = core1_st.communicate()
     return int(ot)
 
