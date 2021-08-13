@@ -12,13 +12,15 @@ from subprocess import Popen
 
 pulp_base='https://pulpito.ceph.com'
 node_base='.front.sepia.ceph.com'
+dbg=0
 
 # create a dictionary of run times
 def find_times(soup, is_v):
     all_times={}
     running_jobs = soup.find_all(attrs={ 'class'  :re.compile(".*job_running.*")})
     for jb in running_jobs:
-        #print (jb)
+        if dbg > 3:
+            print (jb)
         #jbid = re.search('[0-9]+', jb.find(attrs={'data-title':'Job ID'}).text)[0]
         jbid = jb.find(attrs={'data-title':'Job ID'}).text.strip()        
         trun = jb.find(attrs={'data-title':'Runtime'}).text.strip()
@@ -30,20 +32,25 @@ def find_times(soup, is_v):
 
 #counting the number of files in a remote node directory
 def remote_crash_files_count(node_ad, pth):
-    remote_cmd = f'sudo ls {pth}'
-    #print (remote_cmd)
+    remote_cmd = f'sudo ls --color=never -1 {pth}'
+    if dbg > 1:
+        print (f'       cmd: {remote_cmd}')
     core1 = subprocess.Popen(["ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
     core1_st =  subprocess.Popen([ 'wc', '-l' ], stdin=core1.stdout, stdout=subprocess.PIPE)
     ot, er = core1_st.communicate()
+    if dbg > 0:
+        print (f'         ot was {ot}. Er - {er}. Ret: {int(ot)}')
     return int(ot)
     
 def remote_crash_files_Ccount(node_ad, pth):
     remote_cmd = f'sudo ls {pth}'
-    #print (remote_cmd)
+    if dbg > 1:
+        print (f'       cmd: {remote_cmd}')
     core1 = subprocess.Popen(["ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
     core1_st =  subprocess.Popen([ 'wc', '-c' ], stdin=core1.stdout, stdout=subprocess.PIPE)
     ot, er = core1_st.communicate()
-    #print (f'ot was {ot}')
+    if dbg > 0:
+        print (f'         ot was {ot}. Er - {er}. Ret: {int(ot)}')
     return int(ot)
 
 def look_for_core(node_name, is_v):
@@ -54,7 +61,6 @@ def look_for_core(node_name, is_v):
     crash_dir_nf =  remote_crash_files_count(node_ad, '/var/lib/ceph/crash')
     postd_dir_nf =  remote_crash_files_count(node_ad, '/var/lib/ceph/crash/posted')
     ubunt_dir_nf =  remote_crash_files_Ccount(node_ad, '/home/ubuntu/cephtest/archive/coredump')
-    #print (ubunt_dir_nf)
     
     if is_v:
         print (f'     -{node_name}-- files in crash:{crash_dir_nf}, crash/posted:{postd_dir_nf}, ~ubuntu:{ubunt_dir_nf}')
@@ -67,13 +73,13 @@ def look_for_core(node_name, is_v):
         ot, er = crs_nf.communicate()
         print (f"   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n{ot}")
 
-    if (crash_dir_nf > 1):
-        pst_nf = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /var/lib/ceph/crash/posted"],  stdout=subprocess.PIPE)
+    if (postd_dir_nf > 0):
+        pst_nf = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /var/lib/ceph/crash/posted"],  stderr=subprocess.stdout, stdout=subprocess.PIPE)
         ot2, er = pst_nf.communicate()
         print (f"   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n{ot2}")
 
     if (ubunt_dir_nf > 3):
-        ubu_ls = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /home/ubuntu/cephtest/archive/coredump"],  stdout=subprocess.PIPE)
+        ubu_ls = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /home/ubuntu/cephtest/archive/coredump"], stderr=subprocess.DEVNULL, stdout=subprocess.PIPE)
         ot3, er = ubu_ls.communicate()
         print (f"   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n{ot3}")
   
@@ -104,7 +110,8 @@ args = parser.parse_args()
 
 #r=requests.get("https://pulpito.ceph.com/khiremat-2021-08-05_17:51:48-fs:workload-wip-khiremat-test-kernel-exclude-failures-distro-basic-smithi/detail")
 run_full_path = f"{pulp_base}/{args.run_name}/detail"
-print (run_full_path)
+if dbg > 0 or args.verbose:
+    print (run_full_path)
 r = requests.get(run_full_path)
 s = BeautifulSoup(r.text,"html.parser")
 
