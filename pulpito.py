@@ -32,7 +32,7 @@ def find_times(soup, is_v):
 def remote_crash_files_count(node_ad, pth):
     remote_cmd = f'sudo ls {pth}'
     #print (remote_cmd)
-    core1 = subprocess.Popen(["echo", "ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
+    core1 = subprocess.Popen(["ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
     core1_st =  subprocess.Popen([ 'wc', '-l' ], stdin=core1.stdout, stdout=subprocess.PIPE)
     ot, er = core1_st.communicate()
     return int(ot)
@@ -40,9 +40,10 @@ def remote_crash_files_count(node_ad, pth):
 def remote_crash_files_Ccount(node_ad, pth):
     remote_cmd = f'sudo ls {pth}'
     #print (remote_cmd)
-    core1 = subprocess.Popen(["echo", "ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
-    core1_st =  subprocess.Popen([ 'wc', '-l' ], stdin=core1.stdout, stdout=subprocess.PIPE)
+    core1 = subprocess.Popen(["ssh", "-q", node_ad, remote_cmd],  stdout=subprocess.PIPE)
+    core1_st =  subprocess.Popen([ 'wc', '-c' ], stdin=core1.stdout, stdout=subprocess.PIPE)
     ot, er = core1_st.communicate()
+    #print (f'ot was {ot}')
     return int(ot)
 
 def look_for_core(node_name, is_v):
@@ -56,7 +57,7 @@ def look_for_core(node_name, is_v):
     #print (ubunt_dir_nf)
     
     if is_v:
-        print (f'     -{node_name}-- files in crash:{crash_dir_nf}, crash/posted:{postd_dir_nf}')
+        print (f'     -{node_name}-- files in crash:{crash_dir_nf}, crash/posted:{postd_dir_nf}, ~ubuntu:{ubunt_dir_nf}')
         #ubu_ls = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /home/ubuntu/cephtest"],  stdout=subprocess.PIPE)
         #otu, eru = ubu_ls.communicate()
         #print (f"    - ubuntu: {otu}")
@@ -71,7 +72,7 @@ def look_for_core(node_name, is_v):
         ot2, er = pst_nf.communicate()
         print (f"   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n{ot2}")
 
-    if (ubunt_dir_nf > 1):
+    if (ubunt_dir_nf > 3):
         ubu_ls = subprocess.Popen(["ssh", "-q", node_ad, "sudo ls /home/ubuntu/cephtest/archive/coredump"],  stdout=subprocess.PIPE)
         ot3, er = ubu_ls.communicate()
         print (f"   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n{ot3}")
