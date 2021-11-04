@@ -36,6 +36,21 @@ Sample output:
 
 ![Alt text](aux/cephsz-annotated-1.jpg?raw=true "V0.1")
 
+cz.sh
+-----
+
+An updated version of cephsz.sh.
+
+New command-line structure:<br>
+```
+cz.sh [] [*2]
+if argc>1: do not 'fetch' from upstream;
+if argc>2: do not 'fetch' from origin;
+```
+<br>
+---
+<br>
+
 
 Catching failed teuthology jobs in time
 =======================================
