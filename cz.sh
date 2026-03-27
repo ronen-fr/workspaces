@@ -8,15 +8,17 @@ fetch_upstream=true
 
 function clear_dirname()
 {
-  if [ $(hostname) == "rflap" ]; then
+  #if [ $(hostname) == "rflap2" ]; then
     echo $1 | sed 's=/home/rfriedma/=-- -- =' | sed 's=src/= =' | sed 's=/ceph= -- -- -- =' |  awk -e '{printf "%s",substr($0,1,18);}'
-  else
-    echo $1 | sed 's=/home/ronen-fr/=-- -- =' | sed 's=src/= =' | sed 's=/ceph= -- -- -- =' |  awk -e '{printf "%s",substr($0,1,18);}'
-  fi
+  #else
+  #  echo $1 | sed 's=/home/ronen-fr/=-- -- =' | sed 's=src/= =' | sed 's=/ceph= -- -- -- =' |  awk -e '{printf "%s",substr($0,1,18);}'
+  #fi
 }
 
 function short_st()
 {
+    me=`git branch --show-current`
+    up=`git show-branch origin/$me` ||  uptodate="local-only"
     cst=`git status -uno --ignore-submodules=all`
     echo $cst | grep -q 'up to date' && uptodate="up-to-date"
     echo $cst | grep -q 'ahead'      && uptodate="ahead     "
@@ -29,12 +31,12 @@ function refs_diff()
 {
     if git ls-remote  --get-url origin | grep -q ronen && git ls-remote  --get-url upstream | grep -q ceph; then
 	if $fetch_upstream; then
-	    git fetch upstream master > /dev/null 2>&1
+	    git fetch upstream main > /dev/null 2>&1
 	fi
-	df_m_om=`git rev-list --count master..origin/master | sed 's/ //'`
-	#df_om_m=`git rev-list --count origin/master..master | sed 's/ //'`
-	#df_um_om=`git rev-list --count upstream/master..origin/master | sed 's/ //'`
-	df_om_um=`git rev-list --count origin/master..upstream/master`
+	df_m_om=`git rev-list --count main..origin/main | sed 's/ //'`
+	#df_om_m=`git rev-list --count origin/main..main | sed 's/ //'`
+	#df_um_om=`git rev-list --count upstream/main..origin/main | sed 's/ //'`
+	df_om_um=`git rev-list --count origin/main..upstream/main`
 	echo -n "[./o: $df_m_om o-ms/u-ms:$df_om_um]               " | awk -e '{printf "%s",substr($0,1,26);}'
     else
 	echo -n "{{xx-rt-xx}}                     " | awk -e '{printf "%s",substr($0,1,30);}'
@@ -57,7 +59,7 @@ function old_branches()
      git log --date=relative --pretty=oneline -g | awk -f <(cat - <<'EOD'
 
 BEGIN { br_count = 0; }
-/moving from master/ {next;}
+/moving from main/ {next;}
 /moving from/ {
 	#print $0
 	br=$8
@@ -65,13 +67,18 @@ BEGIN { br_count = 0; }
 		next;
 	}
 	seen[$8] = $NF
-	if (br_count>6) {
+	if (br_count>8) {
 		exit 0;
 	}
 	br_count=br_count+1
-	
+
 	date_from = substr($0,match($0,"{.*}"),RLENGTH);
-	printf "-\t%8.8s %-15.15s %s\n",substr($1,1,8),date_from,$8;
+        old_branch=$8
+        # search the next line for the latest commit for the moved-from
+        getline
+        # note that this is only a partial solution. the next line is not
+        # guaranteed to hold the information
+	printf "-\t%8.8s %-15.15s %s\n",substr($1,1,8),date_from,old_branch;
 }
 
 EOD
@@ -120,13 +127,13 @@ function oneceph()
     dirt="$(clear_dirname $d)"
 
     short_st
-    
+
     echo "$dirt -- -- $uptodate --  $branch      $(refs_diff)"
     echo "	$comt  $(modified_files)"
 
     # make sure we have a "normal" origin/upstream setting
     git ls-remote  --get-url origin | grep -q ronen || echo "  ******* irregular origin ***********"
-    
+
     build_dir_info
     #if [ -e build ]; then
     #	ls -ld build | awk  '{ printf "\n\t%s-%s %s  %s",$7,$6,$8,$9; }'
@@ -136,7 +143,7 @@ function oneceph()
     #fi
     echo
 
-    #git log --date=relative --pretty=oneline -g | grep 'moving from' | cut -n -b1-8,46- | cut -d\   -f1,2,3,7 | grep -v master | sed -e 's/^/    /;4q'
+    #git log --date=relative --pretty=oneline -g | grep 'moving from' | cut -n -b1-8,46- | cut -d\   -f1,2,3,7 | grep -v main | sed -e 's/^/    /;4q'
     old_branches
 }
 
@@ -145,11 +152,19 @@ if [ $(hostname) == "rflap" ]; then
   for u in $ac1; do
     ac="$ac $HOME/src/$u/ceph"
   done
-else
-  ac="/home/ronen-fr/tmp2/rt1/ceph /home/ronen-fr/tmp2/rt2/ceph /home/ronen-fr/tmp2/rt3/ceph /home/ronen-fr/tmp2/rt4/ceph /home/ronen-fr/tmp2/bg5/ceph /home/ronen-fr/tmp2/pa1/ceph"
-  ac1=" br1 br2_crimson br3_classic br5_classic crimson_321 lto map markhpc "
+elif [ $(hostname) == "rflap2" ]; then
+  ac1="m1 m2 m3 m4 m5 m6 down"
   for u in $ac1; do
     ac="$ac $HOME/src/$u/ceph"
+  done
+else
+  #ac="/home/ronen-fr/tmp2/rt1/ceph /home/ronen-fr/tmp2/rt2/ceph /home/ronen-fr/tmp2/rt3/ceph /home/ronen-fr/tmp2/rt4/ceph /home/ronen-fr/tmp2/bg5/ceph /home/ronen-fr/tmp2/pa1/ceph"
+  ac=""
+  ac1="k1 k2 k3 k4 k5 k6 k7 k8 k9 "
+  for u in $ac1; do
+    if [ -e "$HOME/src/$u/ceph" ]; then
+      ac="$ac $HOME/src/$u/ceph"
+    fi
   done
 fi
 
@@ -161,4 +176,4 @@ for d in $ac; do
     oneceph $d
 
 done
-    
+
