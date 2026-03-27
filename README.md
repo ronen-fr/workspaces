@@ -51,6 +51,11 @@ if argc>2: do not 'fetch' from origin;
 ---
 <br>
 
+cz.py and cz_par.py
+-------------------
+
+A Python rewrite of cz.sh.
+
 
 Catching failed teuthology jobs in time
 =======================================
