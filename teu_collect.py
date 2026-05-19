@@ -19,12 +19,12 @@ log_exist=False
 pat_osd_num=re.compile(r'(ceph-)*osd.(?P<osdn>[0-9]+).log(.gz)*')
 #pat_osd_num=re.compile(r'(?:(ceph-)*)osd.(?P<osdn>[0-9]+).log(.gz)*')
 #pat_osd_num=re.compile(r'osd.(?P<osdn>[0-9]+).log')
-core_path_parts=re.compile(r'.*/(?P<rmt>((trial)|(smithi))[0-9]+)/coredump/(?P<unzped_name>.*core)(.gz)*')
+core_path_parts=re.compile(r'.*/(?P<rmt>[^/]+)/coredump/(?P<unzped_name>.*core)(.gz)*')
 #crash_path_parts=re.compile(r'.*/(?P<rmt>((trial)|(smithi))[0-9]+)/crash/(?P<instance>.*)')
-crash_path_parts=re.compile(r'.*/(?P<rmt>((trial)|(smithi))[0-9]+)/crash/(posted/)*(?P<instance>.*)')
+crash_path_parts=re.compile(r'.*/(?P<rmt>[^/]+)/crash/(posted/)*(?P<instance>.*)')
 
 #clogs_path_parts=re.compile(r'.*/(?P<rmt>((trial)|(smithi))[0-9]+)/log/(?P<unzped_name>ceph.log).gz')
-clogs_path_parts=re.compile(r'.*/((trial)|(smithi))(?P<rmt>[0-9]+)/log/(?P<unzped_name>ceph.log).gz')
+clogs_path_parts=re.compile(r'.*/[^/]*?(?P<rmt>\d+)/log/(?P<unzped_name>ceph.log).gz')
 
 logs={}
 num_osd_lines = 800000
@@ -32,7 +32,7 @@ num_osd_lines = 800000
 def locate_logs(p, n):
     global log_exist
     #al=list(p.glob('remote/*/log/ceph-osd.*.log.gz')) + list(p.glob('remote/*/log/osd.*.log')) + list(p.glob('remote/ubu*/log/*/ceph-osd.*.log.gz'))
-    al=list(p.rglob(r'*osd.[0-9]*.log.gz')) + list(p.rglob(r'*osd.[0-9]*.log'))
+    al=list(p.rglob(r'*osd.[0-9]*.log*'))
     
     if (len(al) > 0):
         log_exist=True
@@ -46,9 +46,11 @@ def locate_logs(p, n):
 def cp_cluster_logs(p, n):
    clogs=list(p.glob('remote/*/log/ceph.log.gz'))
    for cfn in clogs:
-      clog_parts = clogs_path_parts.search(str(cfn))
       print('cluster log: ', cfn)
-      #print('clog_parts: ', clog_parts.group(0))
+      clog_parts = clogs_path_parts.search(str(cfn))
+      if clog_parts is None:
+          print(f'The cluster log path ({cfn}) does not correspond to the expected pattern')
+          continue
 
       print('rmt: ', clog_parts.group('rmt'), clog_parts.group('unzped_name'))
 
@@ -227,11 +229,10 @@ def parse_logs(p, n) :
 
 def extra_symlinks(p, n) :
     target = homedir / n / '_'
-    if target.exists() :
-        print (f'should unlink {target}') 
-    if not target.exists() :
-        print (f'symlinking from {p} to {target}')
-        os.symlink(p, target)
+    if target.is_symlink() or target.exists() :
+        os.unlink(target)
+    print (f'symlinking from {p} to {target}')
+    os.symlink(p, target)
 
 
 
@@ -243,12 +244,25 @@ parser.add_argument('--no-cores', action='store_true')
 parser.add_argument('--no-backtrace', action='store_true', help='skip extracting Backtrace surroundings from OSD logs')
 parser.add_argument('-f', '--force', action='store_true', help='OK to use existing target dir')
 parser.add_argument('-s', '--symlink', action='store_true', help='create symlinks to some conf files')
-parser.add_argument('path', help='rfriedma/...')
+parser.add_argument('path', nargs='?', default=None, help='/a/... (optional; if omitted, searches /a/*/tnum)')
 parser.add_argument('tnum', help='test number')
 
 args = parser.parse_args()
 
-fpath = pathlib.Path('/a') / args.path / args.tnum
+if args.path:
+    fpath = pathlib.Path('/a') / args.path / args.tnum
+else:
+    import glob
+    matches = glob.glob(f'/a/*/{args.tnum}')
+    if len(matches) == 0:
+        print(f'No test directory found matching /a/*/{args.tnum}')
+        sys.exit(1)
+    if len(matches) > 1:
+        print(f'Multiple matches found for /a/*/{args.tnum}:')
+        for m in matches:
+            print(f'  {m}')
+        sys.exit(1)
+    fpath = pathlib.Path(matches[0])
 print('fpath: ', fpath)
 
 if args.verbose:
